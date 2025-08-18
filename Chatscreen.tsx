@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,57 +11,96 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// =========================================================================
-//                                  GEMINI INTEGRATION SETUP
-// =========================================================================
-
-const API_KEY = 'Your api key'; 
+const API_KEY = 'AIzaSyBPcu7ylZSkALRAHFoR-01gbHWBtTaSTDA'; // ⚠️ Add your Gemini API Key here
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Define the Message type
 type Message = {
   text: string;
   sender: 'user' | 'bot';
 };
 
-// =========================================================================
-//                                 CHATBOT SCREEN
-// =========================================================================
+// =====================================================
+// Typing Dots
+// =====================================================
+const TypingDots = () => {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    const animateDot = (dot: Animated.Value, delay: number) => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.timing(dot, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+        ])
+      ).start();
+    };
+    animateDot(dot1, 0);
+    animateDot(dot2, 200);
+    animateDot(dot3, 400);
+  }, []);
+
+  return (
+    <View style={styles.dotsContainer}>
+      <Animated.Text style={[styles.dot, { opacity: dot1 }]}>•</Animated.Text>
+      <Animated.Text style={[styles.dot, { opacity: dot2 }]}>•</Animated.Text>
+      <Animated.Text style={[styles.dot, { opacity: dot3 }]}>•</Animated.Text>
+    </View>
+  );
+};
+
+// =====================================================
+// Animated Message Bubble
+// =====================================================
+const AnimatedMessage = ({ msg }: { msg: Message }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(10)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.messageBubble,
+        msg.sender === 'user' ? styles.userBubble : styles.botBubble,
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+      ]}
+    >
+      <Text style={msg.sender === 'user' ? styles.userMessageText : styles.botMessageText}>
+        {msg.text}
+      </Text>
+    </Animated.View>
+  );
+};
+
+// =====================================================
+// Chatbot Screen
+// =====================================================
 const ChatbotScreen = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState<string>('');
+  const [inputText, setInputText] = useState('');
   const [isChatEmpty, setIsChatEmpty] = useState(true);
-  const [showSettingsBox, setShowSettingsBox] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const historyList = [
-    'Fixing React update depth error',
-    'JEE study schedule',
-    'Admiration in family',
-    'Math expression',
-    'Ease meaning explanation',
-    'PwC data consent guidance',
-    'Interview question response tips',
-    'Career field suggestions',
-    'React developer about me',
-    'Resume LaTeX Formatting',
-    'Resume Formatting Assistance',
-  ];
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const handleSendMessage = async () => {
     if (inputText.trim()) {
       const userMessage: Message = { text: inputText, sender: 'user' };
-      setMessages(prevMessages => [...prevMessages, userMessage]);
+      setMessages(prev => [...prev, userMessage]);
       setInputText('');
       setIsChatEmpty(false);
       setIsLoading(true);
@@ -72,339 +111,155 @@ const ChatbotScreen = () => {
         const botResponseText = result.response.text();
 
         const botResponse: Message = { text: botResponseText, sender: 'bot' };
-        setMessages(prevMessages => [...prevMessages, botResponse]);
+        setMessages(prev => [...prev, botResponse]);
       } catch (error) {
         console.error('Gemini API Error:', error);
-        Alert.alert('Error', 'Failed to get a response from the AI. Please try again later.');
-        const errorMessage: Message = { text: 'Sorry, I am unable to connect to the AI right now. Please try again later.', sender: 'bot' };
-        setMessages(prevMessages => [...prevMessages, errorMessage]);
+        Alert.alert('Error', 'Could not fetch AI response.');
+        const errorMessage: Message = { text: 'Sorry, I am unavailable right now.', sender: 'bot' };
+        setMessages(prev => [...prev, errorMessage]);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  const handleMicPress = () => {
-    Alert.alert('Microphone Activated', 'Listening for your voice input.');
-  };
-
-  const handleImagePress = () => {
-    Alert.alert('Upload Image', 'You can now upload an image from your device.');
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setDrawerOpen(true)} style={{ marginRight: 16 }}>
-            <MaterialIcons name="menu" size={28} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>AI Mental Health</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/settings')} style={{ marginLeft: 'auto' }}>
-            <Ionicons name="settings-outline" size={25} color="#333" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Drawer Overlay */}
-        {drawerOpen && (
-          <View style={styles.drawerOverlay}>
-            <View style={styles.drawerContainer}>
-              <View>
-                <View style={styles.drawerHeader}>
-                  <Text style={styles.drawerTitle}>Menu</Text>
-                  <TouchableOpacity onPress={() => setDrawerOpen(false)}>
-                    <MaterialIcons name="close" size={28} color="#333" />
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.drawerItemRow}>
-                  <MaterialIcons name="chat" size={22} color="#333" style={{ marginRight: 8 }} />
-                  <TouchableOpacity onPress={() => { setMessages([]); setIsChatEmpty(true); setDrawerOpen(false); }}>
-                    <Text style={styles.drawerItemText}>New chat</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.drawerItemRow}>
-                  <MaterialIcons name="library-books" size={22} color="#333" style={{ marginRight: 8 }} />
-                  <TouchableOpacity onPress={() => { router.push('/(tabs)/resources'); setDrawerOpen(false); }}>
-                    <Text style={styles.drawerItemText}>Resources</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.drawerItemRow}>
-                  <MaterialIcons name="history" size={22} color="#333" style={{ marginRight: 8 }} />
-                  <TouchableOpacity onPress={() => setShowHistory(!showHistory)}>
-                    <Text style={styles.drawerItemText}>Switch History</Text>
-                  </TouchableOpacity>
-                </View>
-                {showHistory && (
-                  <View style={{ marginLeft: 32, marginTop: 8 }}>
-                    {historyList.map((item, idx) => (
-                      <Text key={idx} style={{ color: '#333', fontSize: 15, marginBottom: 4 }}>{item}</Text>
-                    ))}
-                  </View>
-                )}
-              </View>
-              <View>
-                <View style={styles.drawerUserInfo}>
-                  <View style={styles.drawerAvatar}>
-                    <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 20 }}>K</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.drawerUserName}>Kirti Jha</Text>
-                    <Text style={styles.drawerUserId}>ID: 12345</Text>
-                    <Text style={styles.drawerUserId}>Usage: 10 hrs</Text>
-                  </View>
-                </View>
-                <TouchableOpacity style={styles.drawerSettingsIcon} onPress={() => setShowSettingsBox(true)}>
-                  <Ionicons name="settings-outline" size={28} color="#333" />
-                </TouchableOpacity>
-              </View>
-              {showSettingsBox && (
-                <View style={styles.drawerSettingsBox}>
-                  <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Settings</Text>
-                  <Text style={{ fontSize: 16, color: '#666' }}>Font: Default</Text>
-                  <Text style={{ fontSize: 16, color: '#666' }}>Background: Light Pink</Text>
-                  <TouchableOpacity onPress={() => setShowSettingsBox(false)} style={{ marginTop: 16 }}>
-                    <Text style={{ color: '#007bff', fontWeight: 'bold' }}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+    <LinearGradient colors={['#fde2e4', '#f8bbd0', '#f48fb1']} style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={80}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <MaterialIcons name="spa" size={26} color="#6D4C41" style={{ marginRight: 8 }} />
+            <Text style={styles.headerTitle}>Mindfulness</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/settings')} style={{ marginLeft: 'auto' }}>
+              <Ionicons name="settings-outline" size={23} color="#6D4C41" />
+            </TouchableOpacity>
           </View>
-        )}
 
-        {/* Main Chat Area */}
-        <ScrollView style={styles.chatArea}>
-          {isChatEmpty ? (
-            <View style={styles.welcomeSection}>
-              <Text style={styles.welcomeText}>How was your mental health?</Text>
-            </View>
-          ) : (
-            messages.map((msg, index) => (
-              <View key={index} style={[styles.messageBubble, msg.sender === 'user' ? styles.userBubble : styles.botBubble]}>
-                <Text style={msg.sender === 'user' ? styles.userMessageText : styles.botMessageText}>
-                  {msg.text}
-                </Text>
+          {/* Chat Area */}
+          <ScrollView
+            style={styles.chatArea}
+            ref={scrollViewRef}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {isChatEmpty ? (
+              <View style={styles.welcomeSection}>
+                <Text style={styles.welcomeText}>🌸 Welcome to Mindfulness 🌸</Text>
+                <Text style={styles.subWelcomeText}>How are you feeling today? 🌿</Text>
               </View>
-            ))
-          )}
-          {isLoading && (
-            <View style={styles.loadingBubble}>
-              <Text style={styles.loadingText}>...</Text>
-            </View>
-          )}
-        </ScrollView>
+            ) : (
+              messages.map((msg, index) => <AnimatedMessage key={index} msg={msg} />)
+            )}
 
-        {/* Bottom Input Bar with Send Button */}
-        <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.iconButton} onPress={handleImagePress}>
-            <Ionicons name="image-outline" size={24} color="gray" />
-          </TouchableOpacity>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Ask anything"
-            value={inputText}
-            onChangeText={setInputText}
-            onSubmitEditing={handleSendMessage}
-            editable={!isLoading}
-          />
-          <TouchableOpacity style={styles.iconButton} onPress={handleMicPress} disabled={isLoading}>
-            <Ionicons name="mic-outline" size={24} color="gray" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage} disabled={isLoading}>
-            <Ionicons name="pulse-outline" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            {isLoading && (
+              <View style={styles.loadingBubble}>
+                <TypingDots />
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Share your thoughts..."
+              placeholderTextColor="#999"
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={handleSendMessage}
+              editable={!isLoading}
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage} disabled={isLoading}>
+              <Ionicons name="send" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
+export default ChatbotScreen;
+
+// =====================================================
+// Styles
+// =====================================================
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFD1E0',
-  },
-  container: {
-    flex: 1,
-  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#f8bbd0',
+    borderBottomWidth: 0.5,
+    borderColor: '#e57373',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  chatArea: {
-    flex: 1,
-    padding: 10,
-  },
-  welcomeSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
+  headerTitle: { fontSize: 20, fontWeight: '600', color: '#5D4037' },
+
+  chatArea: { flex: 1, padding: 14 },
+
+  welcomeSection: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 },
+  welcomeText: { fontSize: 22, fontWeight: '600', color: '#333', textAlign: 'center' },
+  subWelcomeText: { marginTop: 8, fontSize: 15, color: '#666', textAlign: 'center' },
+
   messageBubble: {
-    padding: 12,
-    borderRadius: 20,
-    marginVertical: 5,
-    maxWidth: '80%',
+    padding: 14,
+    borderRadius: 18,
+    marginVertical: 6,
+    maxWidth: '78%',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  userBubble: {
-    backgroundColor: '#007bff',
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 5,
-  },
-  botBubble: {
-    backgroundColor: '#e5e5e5',
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 5,
-  },
+  userBubble: { backgroundColor: '#f48fb1', alignSelf: 'flex-end', borderBottomRightRadius: 6 },
+  botBubble: { backgroundColor: '#fce4ec', alignSelf: 'flex-start', borderBottomLeftRadius: 6 },
+
+  userMessageText: { color: '#fff', fontSize: 16, lineHeight: 22 },
+  botMessageText: { color: '#880e4f', fontSize: 16, lineHeight: 22 },
+
   loadingBubble: {
-    backgroundColor: '#e5e5e5',
+    backgroundColor: '#fce4ec',
     alignSelf: 'flex-start',
-    borderRadius: 20,
+    borderRadius: 18,
     marginVertical: 5,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 12,
   },
-  userMessageText: {
-    color: '#fff',
-  },
-  botMessageText: {
-    color: '#333',
-  },
-  loadingText: {
-    color: '#333',
-    fontSize: 16,
-  },
+
+  dotsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', height: 20 },
+  dot: { fontSize: 26, color: '#d81b60', marginHorizontal: 2 },
+
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    backgroundColor: '#FFF',
     padding: 10,
+    borderTopWidth: 0.5,
+    borderColor: '#E0E0E0',
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F1F1F1',
     borderRadius: 25,
     paddingHorizontal: 15,
     paddingVertical: 10,
-  },
-  iconButton: {
-    padding: 5,
+    fontSize: 16,
+    marginRight: 6,
   },
   sendButton: {
-    backgroundColor: '#6a0dad',
+    backgroundColor: '#ec407a',
     borderRadius: 25,
-    padding: 10,
-    marginLeft: 8,
+    padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  // Drawer-specific styles
-  drawerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    zIndex: 100,
-    justifyContent: 'flex-start',
-  },
-  drawerContainer: {
-    width: 280,
-    backgroundColor: '#fff5f5',
-    height: '100%',
-    paddingTop: 40,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-    justifyContent: 'space-between',
-  },
-  drawerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  drawerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  drawerItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  drawerItemText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  drawerUserInfo: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  drawerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#e0b3c6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  drawerUserName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  drawerUserId: {
-    fontSize: 13,
-    color: '#666',
-  },
-  drawerSettingsBox: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 80,
-    left: 30,
-    right: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  drawerSettingsIcon: {
-    alignItems: 'center',
-    marginBottom: 24,
   },
 });
-
-export default ChatbotScreen;
 
 
 
