@@ -1,122 +1,162 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
+// CalendarMoodScreen.tsx
+import React, { useState } from "react";
+import { View, Text, Modal, TouchableOpacity, StyleSheet, FlatList } from "react-native";
+import { Calendar } from "react-native-calendars";
+import { LinearGradient } from "expo-linear-gradient";
 
-// You can customize the calendar's language settings
-LocaleConfig.locales['en'] = {
-  monthNames: [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ],
-  monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-  dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-  dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-  today: 'Today',
-};
-LocaleConfig.defaultLocale = 'en';
+const moodOptions = [
+  { emoji: "😊", label: "Happy" },
+  { emoji: "😔", label: "Sad" },
+  { emoji: "😡", label: "Angry" },
+  { emoji: "😌", label: "Calm" },
+  { emoji: "🤩", label: "Excited" },
+];
 
-type DayType = {
-  dateString: string;
-  day: number;
-  month: number;
-  year: number;
-  timestamp: number;
-};
+export default function CalendarMoodScreen() {
+  const [selectedDate, setSelectedDate] = useState("");
+  const [moodModal, setMoodModal] = useState(false);
+  const [moods, setMoods] = useState<{ [key: string]: string }>({});
 
-const CalendarScreen = () => {
-  const [selectedDate, setSelectedDate] = useState<DayType | null>(null);
-
-  // Example of marked dates to show a mood or journal entry.
-  const markedDates: {
-    [key: string]: {
-      selected?: boolean;
-      marked?: boolean;
-      dotColor?: string;
-      selectedColor?: string;
-    };
-  } = {
-    '2025-08-15': { selected: true, marked: true, dotColor: 'blue' },
-    '2025-08-20': { marked: true, dotColor: 'red' },
-    '2025-08-25': { marked: true, dotColor: 'green' },
+  const handleDayPress = (day: any) => {
+    setSelectedDate(day.dateString);
+    setMoodModal(true);
   };
 
-  const getMarkedDates = () => {
-    if (selectedDate) {
-      return {
-        ...markedDates,
-        [selectedDate.dateString]: {
-          ...(markedDates[selectedDate.dateString] || {}),
-          selected: true,
-          selectedColor: '#007bff',
-        },
-      };
-    }
-    return markedDates;
+  const handleMoodSelect = (emoji: string) => {
+    setMoods((prev) => ({ ...prev, [selectedDate]: emoji }));
+    setMoodModal(false);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Calendar & Insights</Text>
-      <Calendar
-        style={styles.calendar}
-        onDayPress={(day: DayType) => {
-          setSelectedDate(day);
-          console.log('Selected date:', day);
-        }}
-        markedDates={getMarkedDates()}
-        theme={{
-          selectedDayBackgroundColor: '#007bff',
-          todayTextColor: '#007bff',
-          arrowColor: '#007bff',
-          dotColor: '#007bff',
-        }}
-      />
-      <View style={styles.infoContainer}>
-        {selectedDate ? (
-          <Text style={styles.infoText}>
-            Selected Date: {selectedDate.dateString}
-          </Text>
-        ) : (
-          <Text style={styles.infoText}>Tap a date to see details.</Text>
-        )}
+    <LinearGradient
+      colors={["#E0F7FA", "#EDE7F6"]} // light blue to lavender gradient
+      style={styles.gradient}
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Mood Calendar</Text>
+
+        <Calendar
+          onDayPress={handleDayPress}
+          markedDates={Object.keys(moods).reduce((acc: any, date) => {
+            acc[date] = {
+              marked: true,
+              dotColor: "#6200ee",
+              customStyles: {
+                container: { backgroundColor: "#fff", borderRadius: 6 },
+                text: { color: "#000" },
+              },
+            };
+            return acc;
+          }, {})}
+          theme={{
+            backgroundColor: "transparent",
+            calendarBackground: "transparent",
+            todayTextColor: "#6200ee",
+            arrowColor: "#6200ee",
+          }}
+        />
+
+        <FlatList
+          data={Object.keys(moods)}
+          keyExtractor={(item) => item}
+          renderItem={({ item }) => (
+            <View style={styles.moodItem}>
+              <Text style={styles.date}>{item}</Text>
+              <Text style={styles.emoji}>{moods[item]}</Text>
+            </View>
+          )}
+        />
+
+        {/* Mood Selection Modal */}
+        <Modal visible={moodModal} transparent animationType="fade">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>How was your mood?</Text>
+              <View style={styles.moodOptions}>
+                {moodOptions.map((m, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.moodButton}
+                    onPress={() => handleMoodSelect(m.emoji)}
+                  >
+                    <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                    <Text style={styles.moodLabel}>{m.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
-    </View>
+    </LinearGradient>
   );
-};
+}
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-    padding: 20,
+    padding: 16,
   },
-  header: {
+  title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
+    fontWeight: "700",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 12,
   },
-  calendar: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  infoContainer: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+  moodItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 12,
+    marginVertical: 4,
+    backgroundColor: "#ffffffaa",
+    borderRadius: 12,
+    shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowRadius: 6,
   },
-  infoText: {
+  date: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
+  },
+  emoji: {
+    fontSize: 22,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  modalContent: {
+    margin: 20,
+    padding: 20,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 16,
+  },
+  moodOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  moodButton: {
+    alignItems: "center",
+    margin: 10,
+  },
+  moodEmoji: {
+    fontSize: 32,
+  },
+  moodLabel: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 4,
   },
 });
-
-export default CalendarScreen;
