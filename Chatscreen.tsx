@@ -21,7 +21,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 //                                  GEMINI INTEGRATION SETUP
 // =========================================================================
 
-const API_KEY = 'AIzaSyDBWZrNDvmO-LXVlnzluMhgwm-KOaHKxq0'; 
+const API_KEY = 'Your api key'; 
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Define the Message type
