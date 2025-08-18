@@ -1,45 +1,60 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
 
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Tabs } from 'expo-router';
+import Feather from 'react-native-vector-icons/Feather';
+import React from 'react';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+	return (
+		<Tabs
+			screenOptions={{
+				tabBarStyle: {
+					backgroundColor: '#fff5f5', // light pink
+				},
+			}}
+		>
+			<Tabs.Screen
+				name="index"
+				options={{
+					title: 'Chat',
+					tabBarIcon: ({ color, size }) => <Feather name="message-circle" color={color} size={size} />,
+				}}
+			/>
+			<Tabs.Screen
+				name="calenderscreen"
+				options={{
+					title: 'Calendar',
+					tabBarIcon: ({ color, size }) => <Feather name="calendar" color={color} size={size} />,
+				}}
+			/>
+			<Tabs.Screen
+				name="exercise"
+				options={{
+					title: 'Exercise',
+					tabBarIcon: ({ color, size }) => <Feather name="activity" color={color} size={size} />,
+				}}
+			/>
+			<Tabs.Screen
+				name="journal"
+				options={{
+					title: 'Journal',
+					tabBarIcon: ({ color, size }) => <Feather name="book" color={color} size={size} />,
+				}}
+			/>
+			<Tabs.Screen
+				name="meditation"
+				options={{
+					title: 'Meditation',
+					tabBarIcon: ({ color, size }) => <Feather name="cloud" color={color} size={size} />,
+				}}
+			/>
+            <Tabs.Screen
+				name="setting"
+				options={{
+					title: 'Setting',
+					tabBarIcon: ({ color, size }) => <Feather name="setting" color={color} size={size} />,
+				}}
+			/>
+		</Tabs>
+	);
 }
+
