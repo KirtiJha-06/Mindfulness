@@ -48,3 +48,56 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+- 💬 React Native Chat App
+
+A simple yet elegant chat screen UI built with React Native.
+It features a pleasant pink gradient background, a smooth keyboard-aware input bar, and a clean, minimal chat interface designed for a calm user experience.
+
+✨ Features
+
+📱 Responsive chat UI for mobile
+
+🎨 Gradient background (pinkish & calming tones)
+
+⌨️ Keyboard-aware input field (always stays above the keyboard)
+
+⚡ Built with Expo & React Native
+
+🧩 Easy to customize and extend (animations, themes, avatars, etc.)
+
+🚀 Tech Stack
+
+React Native
+
+Expo
+
+React Navigation
+
+React Native Animatable
+
+KeyboardAvoidingView & ScrollView
+
+📷 Screenshots
+
+(Add your screenshots here for better presentation)
+
+🛠️ Installation
+git clone https://github.com/yourusername/chat-app.git
+cd chat-app
+npm install
+npm start
+
+🔮 Future Improvements
+
+Dark/Light mode toggle
+
+Message animations
+
+Support for multimedia messages (images, audio, video)
+
+Backend integration (Firebase / Node.js)
+
+🤝 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you’d like to change.
