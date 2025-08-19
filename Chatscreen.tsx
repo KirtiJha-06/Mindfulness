@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const API_KEY = 'AIzaSyBPcu7ylZSkALRAHFoR-01gbHWBtTaSTDA'; // ⚠️ Add your Gemini API Key here
+const API_KEY = ''; // ⚠️ Add your Gemini API Key here
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 type Message = {
