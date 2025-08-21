@@ -14,7 +14,7 @@ _“Take a deep breath… How are you feeling today?”_
 - 💪 **Exercise:** Quick breathing & movement exercises with timers/instructions.  
 - 📓 **Journal:** Daily notes, gratitude prompts, reflections.  
 - 🕉️ **Meditation & Yoga:** Short guided sessions/timers.  
-- ⚙️ **Settings:** Reminders, notifications, preferences.  
+
 ---
 ## 🖼️ App UI
 
