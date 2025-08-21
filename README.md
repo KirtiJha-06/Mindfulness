@@ -18,7 +18,7 @@ _“Take a deep breath… How are you feeling today?”_
 ---
 ## 🖼️ App UI
 
-![App UI](./Chatscreen.jpg)
+![App UI](./chatscreen.jpg)
 
 ---
 ## 🎥 Demo Video
